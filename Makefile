@@ -4,6 +4,7 @@ export OUTPUT_FILENAME
 MAKEFILE_NAME := $(MAKEFILE_LIST)
 MAKEFILE_DIR := $(dir $(MAKEFILE_NAME))
 SDK_ROOT := $(shell echo $$SDK_ROOT)
+SDK_LIBS := $(shell echo $$SDK_LIBS)
 PROJ_HOME := $(SDK_ROOT)/apps/$(PROJECT_NAME)
 
 TEMPLATE_PATH = $(SDK_ROOT)/components/toolchain/gcc
@@ -36,18 +37,13 @@ SIZE            := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-size'
 #function for removing duplicates in a list
 remduplicates = $(strip $(if $1,$(firstword $1) $(call remduplicates,$(filter-out $(firstword $1),$1))))
 
-
 #Project specific files
 INC_PATHS  	+= -I$(abspath $(PROJ_HOME)/config)
 INC_PATHS  	+= -I$(abspath $(PROJ_HOME)/include)
-INC_PATHS	+= -I$(abspath $(SDK_ROOT)/apps/nrf_mma8453q/include)
-INC_PATHS	+= -I$(abspath $(SDK_ROOT)/apps/nrf_freertos/include)
-INC_PATHS	+= -I$(abspath $(SDK_ROOT)/apps/nrf_uart/include)
-C_SOURCE_FILES += $(abspath $(PROJ_HOME)/$(shell find ./ -type f -name '*.c'))
-C_SOURCE_FILES += $(abspath $(SDK_ROOT)/apps/nrf_mma8453q/src/nrf_mma8453q.c)
-C_SOURCE_FILES += $(abspath $(SDK_ROOT)/apps/nrf_freertos/src/$(shell find ../nrf_freertos/src -type f -name '*.c'))
-C_SOURCE_FILES += $(abspath $(SDK_ROOT)/apps/nrf_uart/src/nrf_uartDriver.c)
-
+INC_PATHS	+= -I$(abspath $(SDK_LIBS)/freertos/include)
+C_SOURCE_FILES += $(abspath $(PROJ_HOME)/main.c)
+C_SOURCE_FILES += $(abspath $(wildcard $(PROJ_HOME)/src/*))
+C_SOURCE_FILES += $(abspath $(wildcard $(SDK_LIBS)/freertos/src/*))
 
 #source common to all targets
 C_SOURCE_FILES += \

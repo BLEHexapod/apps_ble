@@ -19,7 +19,6 @@
 #include "app_error.h"
 #include "app_fifo.h"
 #include "ble.h"
-#include "ble_acc_service.h"
 #include "ble_connection.h"
 #include "ble_dis.h"
 #include "ble_gap.h"
@@ -27,8 +26,6 @@
 #include "ble_stack.h"
 #include "nordic_common.h"
 #include "nrf.h"
-#include "nrf_mma8453q.h"
-#include "nrf_uartDriver.h"
 #include "os_semaphore.h"
 #include "os_thread.h"
 #include "os_timer.h"
@@ -37,38 +34,19 @@
 
 static uint16_t connHandle = BLE_CONN_HANDLE_INVALID;
 static bool isConnected = false;
-static ble_accSrvHandle_t accSrvHandle;
 static dm_application_instance_t appHandle;
 static ble_uuid_t advUuids[] = {
     { BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE }
 };
-static os_timerHandle_t accelSrvTimer;
+
 static os_semHandle_t bleEventReady;
 static os_threadHandle_t mainThreadHandle;
 
-static app_fifo_t accelXFifo;
-static app_fifo_t accelYFifo;
-static uint8_t *accelXBuf;
-static uint8_t *accelYBuf;
-
-static char uartBuf[20];
 
 // Softdevice error handler
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
-}
-
-static void accSrVTimeout(void *args)
-{
-    if(isConnected) {
-        drv_accelData_t data = {0,0,0};
-        app_fifo_get(&accelXFifo, (uint8_t *)&data.x);
-        app_fifo_get(&accelYFifo, (uint8_t *)&data.y);
-        sprintf(uartBuf, "X: %d Y: %d \r\n", data.x, data.y);
-        uart_write(uartBuf, strlen(uartBuf));
-        ble_accSrvUpdate(accSrvHandle, &data);
-    }
 }
 
 /**
@@ -80,17 +58,6 @@ static void timersInit(void)
     // Initialize timer module.
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
 
-    os_timerConfig_t timerConf = {
-            .name = "ACS",
-            .period = 10,
-            .startLater = true,
-            .oneShot = false,
-            .callback = accSrVTimeout
-    };
-    accelSrvTimer = os_timerTaskNew(&timerConf, OSTIMER_WAIT_FOR_QUEUE);
-
-    if (accelSrvTimer == NULL)
-        APP_ERROR_HANDLER(NRF_ERROR_NO_MEM);
 }
 
 /**
@@ -98,7 +65,6 @@ static void timersInit(void)
  */
 static void timerTasksStart(void)
 {
-    os_timerTaskStart(accelSrvTimer);
 }
 
 /**
@@ -122,8 +88,6 @@ static void servicesInit(void)
     errCode = ble_dis_init(&dis_init);
     APP_ERROR_CHECK(errCode);
 
-    ble_accSrvConfig_t accSrvConf = { .accelHandle = NULL };
-    accSrvHandle = ble_accSrvInit(&accSrvConf);
 }
 
 static void onConnParamsEvt(ble_conn_params_evt_t * p_evt)
@@ -148,7 +112,6 @@ static void onBlEevent(ble_evt_t * p_ble_evt)
     switch (p_ble_evt->header.evt_id) {
         case BLE_GAP_EVT_CONNECTED:
             connHandle = p_ble_evt->evt.gap_evt.conn_handle;
-            uart_write("Connected\r\n", strlen("Connected\r\n"));
             isConnected = true;
             break;
         case BLE_GAP_EVT_DISCONNECTED:
@@ -164,7 +127,6 @@ static void bleEventDispatch(ble_evt_t * p_ble_evt)
 {
     dm_ble_evt_handler(p_ble_evt);
     ble_conn_params_on_ble_evt(p_ble_evt);
-    ble_accSrvBleHandleEvent(accSrvHandle, p_ble_evt);
     onBlEevent(p_ble_evt);
     ble_advertising_on_ble_evt(p_ble_evt);
 }
@@ -184,7 +146,6 @@ static uint32_t bleNewEventHandler(void)
 static void mainThread(void * arg)
 {
     uint32_t errCode;
-    uart_write("init\r\n", strlen("init\r\n"));
     // Initialize.
     timersInit();
     ble_stackInit(bleNewEventHandler, STACK_OSC_EXTERNAL);
@@ -213,14 +174,8 @@ int main(void)
     os_semConfig_t semConf;
     semConf.binary = true;
     bleEventReady = os_semNew(&semConf);
-    uart_init();
     if (bleEventReady == NULL)
         APP_ERROR_HANDLER(NRF_ERROR_NO_MEM);
-
-    accelXBuf = calloc(ACCEL_BUF_SIZE, sizeof(uint8_t));
-    accelYBuf = calloc(ACCEL_BUF_SIZE, sizeof(uint8_t));
-    app_fifo_init(&accelXFifo, accelXBuf, sizeof(accelXBuf));
-    app_fifo_init(&accelYFifo, accelYBuf, sizeof(accelYBuf));
 
     os_threadConfig_t mainThreadConf = {
         .name = "MT",
