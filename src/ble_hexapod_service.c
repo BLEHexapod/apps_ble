@@ -30,6 +30,7 @@ struct hexaSrvHandle {
     ble_gap_conn_sec_mode_t reportReadPerm;
     ble_gatts_char_handles_t charDirHandle;
     ble_gatts_char_handles_t charDistHandle;
+    hexaSrvEventHandler_t writeHandler;
     uint8_t uuidType;
 };
 
@@ -41,6 +42,15 @@ static void onConnect(ble_hexaSrvHandle_t handle, ble_evt_t *bleEvent)
 static void onDisconnect(ble_hexaSrvHandle_t handle, ble_evt_t *bleEvent)
 {
     handle->connHandle = BLE_CONN_HANDLE_INVALID;
+}
+
+static void onWrite(ble_hexaSrvHandle_t handle, ble_evt_t *bleEvent)
+{
+	ble_gatts_evt_write_t *writeEvt = &bleEvent->evt.gatts_evt.params.write;
+	if(writeEvt->handle == handle->charDirHandle.value_handle) {
+		if(handle->writeHandler)
+			handle->writeHandler((hexaSrvDirs_t)writeEvt->data[0]);
+	}
 }
 
 static uint32_t addDirChar(ble_hexaSrvHandle_t handle)
@@ -60,6 +70,7 @@ static uint32_t addDirChar(ble_hexaSrvHandle_t handle)
 
     memset(&gattChar, 0, sizeof(gattChar));
     gattChar.char_props.write = 1;
+    gattChar.char_props.write_wo_resp = 1;
     gattChar.p_char_user_desc = NULL;
     gattChar.p_char_user_desc = NULL;
     gattChar.p_char_pf = NULL;
@@ -81,7 +92,7 @@ static uint32_t addDirChar(ble_hexaSrvHandle_t handle)
     gattAttrVal.p_uuid = &hexaCharUuid;
     gattAttrVal.p_attr_md = &gattAttr;
     gattAttrVal.init_len = sizeof(uint8_t);
-    gattAttrVal.max_len = GATT_MTU_SIZE_DEFAULT - 3;
+    gattAttrVal.max_len = sizeof(uint8_t);
     gattAttrVal.init_offs = 0;
     gattAttrVal.p_value = NULL;
 
@@ -145,7 +156,7 @@ static uint32_t addDistChar(ble_hexaSrvHandle_t handle)
     return errCode;
 }
 
-ble_hexaSrvHandle_t ble_hexaSrvInit(void)
+ble_hexaSrvHandle_t ble_hexaSrvInit(hexaSrvEventHandler_t eventHandler)
 {
     uint32_t errCode;
 
@@ -184,6 +195,9 @@ void ble_hexaSrvBleHandleEvent(ble_hexaSrvHandle_t handle, ble_evt_t *bleEvent)
         case BLE_GAP_EVT_DISCONNECTED:
             onDisconnect(handle, bleEvent);
             break;
+        case BLE_GATTS_EVT_WRITE:
+        	onWrite(handle, bleEvent);
+        	break;
         default:
         	break;
     }

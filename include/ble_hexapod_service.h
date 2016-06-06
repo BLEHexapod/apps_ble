@@ -24,13 +24,21 @@
 #define HEXA_UUID_DIRECTION     0x9E5E
 #define HEXA_UUID_DISTANCE      0x9E5F
 
-typedef struct hexaSrvHandle *ble_hexaSrvHandle_t;
+typedef enum {
+	HEXA_FORWARD = 0,
+	HEXA_FORWARD_LEFT,
+	HEXA_FORWARD_RIGHT,
+	HEXA_LEFT,
+	HEXA_RIGHT
+} hexaSrvDirs_t;
 
+typedef struct hexaSrvHandle *ble_hexaSrvHandle_t;
+typedef void(*hexaSrvEventHandler_t)(hexaSrvDirs_t);
 /**
  * @brief	Initialise the hexapod BLE service.
  * @return
  */
-ble_hexaSrvHandle_t ble_hexaSrvInit(void);
+ble_hexaSrvHandle_t ble_hexaSrvInit(hexaSrvEventHandler_t eventHandler);
 
 /**
  * @brief Handle the hexapod BLE events.
