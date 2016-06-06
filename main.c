@@ -57,7 +57,6 @@ static void timersInit(void)
 {
     // Initialize timer module.
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
-
 }
 
 /**

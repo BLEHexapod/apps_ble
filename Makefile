@@ -4,7 +4,7 @@ export OUTPUT_FILENAME
 MAKEFILE_NAME := $(MAKEFILE_LIST)
 MAKEFILE_DIR := $(dir $(MAKEFILE_NAME))
 SDK_ROOT := $(shell echo $$SDK_ROOT)
-SDK_LIBS := $(shell echo $$SDK_LIBS)
+SDK_LIBS := $(SDK_ROOT)/lib
 PROJ_HOME := $(SDK_ROOT)/apps/$(PROJECT_NAME)
 
 TEMPLATE_PATH = $(SDK_ROOT)/components/toolchain/gcc
