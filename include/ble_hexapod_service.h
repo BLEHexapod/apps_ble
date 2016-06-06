@@ -15,12 +15,14 @@
  */
 
 
+#include "ble.h"
+#include "ble_types.h"
 
-#define HEXA_UUID_BASE  {0X98, 0X4B, 0XCC, 0X12, 0X0A, 0XE3, 0X4F, 0XEC, 0XBE,\
-                            0XA3, 0X4A, 0XD3, 0X39, 0XD6, 0X74, 0XD0}
-
-#define HEXA_UUID_DIRECTION     0X9E5E
-#define HEXA_UUID_DISTANCE      0X9E5F
+#define HEXA_UUID_BASE  		{ 0x98, 0x4B, 0xCC, 0x12, 0x0A, 0xE3, 0x4F, 0xEC, 0xBE, \
+									0xA3, 0x4A, 0xD3, 0x39, 0xD6, 0x74, 0xD0}
+#define HEXA_UUID_SERVICE		0x9E5D
+#define HEXA_UUID_DIRECTION     0x9E5E
+#define HEXA_UUID_DISTANCE      0x9E5F
 
 typedef struct hexaSrvHandle *ble_hexaSrvHandle_t;
 

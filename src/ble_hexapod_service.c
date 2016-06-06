@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "ble_hexapod_service.h"
 #include "nordic_common.h"
 #include "ble_srv_common.h"
@@ -153,13 +154,13 @@ ble_hexaSrvHandle_t ble_hexaSrvInit(void)
     ble_uuid128_t baseuuid = {HEXA_UUID_BASE};
 
     // Add services
-    handle = calloc(1, sizeof(struct accSrvHandle));
+    handle = calloc(1, sizeof(struct hexaSrvHandle));
 
     errCode = sd_ble_uuid_vs_add(&baseuuid, &handle->uuidType);
     APP_ERROR_CHECK(errCode);
 
     hexaSrvUuid.type = handle->uuidType;
-    hexaSrvUuid.uuid = HEXA_UUID_BASE;
+    hexaSrvUuid.uuid = HEXA_UUID_SERVICE;
 
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&handle->reportReadPerm);
 
