@@ -64,7 +64,7 @@ static uint32_t addDirChar(ble_hexaSrvHandle_t handle)
     ble_gatts_attr_md_t cccdAttr;
 
     memset(&cccdAttr, 0, sizeof(cccdAttr));
-    BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&cccdAttr.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccdAttr.read_perm);
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccdAttr.write_perm);
     cccdAttr.vloc = BLE_GATTS_VLOC_STACK;
 

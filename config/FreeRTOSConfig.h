@@ -91,7 +91,7 @@
 #define configTICK_SOURCE FREERTOS_USE_RTC
 
 #define configUSE_PREEMPTION                        1
-#define configUSE_PORT_OPTIMISED_TASK_SELECTION     1
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION     0
 #define configUSE_TICKLESS_IDLE                     1
 #define configCPU_CLOCK_HZ                          ( SystemCoreClock )
 #define configTICK_RATE_HZ                          1000

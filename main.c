@@ -16,6 +16,9 @@
 
 #include <stdint.h>
 #include <string.h>
+
+#include "ble_hexapod_service.h"
+
 #include "app_error.h"
 #include "app_fifo.h"
 #include "ble.h"
@@ -39,6 +42,7 @@ static ble_uuid_t advUuids[] = {
     { BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE }
 };
 
+static ble_hexaSrvHandle_t hexaSrvHandle = NULL;
 static os_semHandle_t bleEventReady;
 static os_threadHandle_t mainThreadHandle;
 
@@ -47,6 +51,11 @@ static os_threadHandle_t mainThreadHandle;
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
+}
+
+static void hexaSrvHandler(hexaSrvDirs_t hexaDirs)
+{
+	(void)hexaDirs;
 }
 
 /**
@@ -86,7 +95,7 @@ static void servicesInit(void)
 
     errCode = ble_dis_init(&dis_init);
     APP_ERROR_CHECK(errCode);
-
+    hexaSrvHandle = ble_hexaSrvInit(hexaSrvHandler);
 }
 
 static void onConnParamsEvt(ble_conn_params_evt_t * p_evt)
@@ -126,6 +135,7 @@ static void bleEventDispatch(ble_evt_t * p_ble_evt)
 {
     dm_ble_evt_handler(p_ble_evt);
     ble_conn_params_on_ble_evt(p_ble_evt);
+    ble_hexaSrvBleHandleEvent(NULL, p_ble_evt);
     onBlEevent(p_ble_evt);
     ble_advertising_on_ble_evt(p_ble_evt);
 }
@@ -138,14 +148,13 @@ static void sysEventDispatch(uint32_t sys_evt)
 
 static uint32_t bleNewEventHandler(void)
 {
-    os_threadIsrNotify(mainThreadHandle);
+    os_semIsrPost(bleEventReady);
     return NRF_SUCCESS;
 }
 
 static void mainThread(void * arg)
 {
     uint32_t errCode;
-    // Initialize.
     timersInit();
     ble_stackInit(bleNewEventHandler, STACK_OSC_EXTERNAL);
     ble_stackConfig(sysEventDispatch, bleEventDispatch);
@@ -161,8 +170,8 @@ static void mainThread(void * arg)
 
     while (1) {
         /* Wait for event from SoftDevice */
-        os_threadWait();
-        intern_softdevice_events_execute();
+        if(os_semTryWait(bleEventReady))
+            intern_softdevice_events_execute();
 
     }
     os_threadExit(mainThreadHandle);
@@ -187,7 +196,7 @@ int main(void)
     mainThreadHandle = os_threadNew(&mainThreadConf);
 
     // Activate deep sleep mode
-    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+//    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
     // Start FreeRTOS scheduler.
     os_startScheduler();
